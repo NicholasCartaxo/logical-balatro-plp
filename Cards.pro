@@ -1,6 +1,7 @@
 :- module(cards, [
     suit/1,
     suitStr/2,
+    suitOrd/2,
     rank/1,
     rankStr/2,
     rankValue/2,
@@ -17,6 +18,11 @@ suitStr(spade,"\x2660"). %unicode characters for suits
 suitStr(heart,"\x2665").
 suitStr(diamond,"\x2666").
 suitStr(club,"\x2663").
+
+suitOrd(spade, 1).
+suitOrd(heart, 2).
+suitOrd(diamond, 3).
+suitOrd(club, 4).
 
 rank(X) :- (integer(X), X >= 2, X =< 10,!); (X == j,!); (X == q,!); (X == k,!); (X == a,!).
 
