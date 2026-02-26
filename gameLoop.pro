@@ -33,10 +33,6 @@ initialRoundGameState(FullRoundState, [
 
 initUnselected(Card, [Card, false]).
 
-isValidDigit(C) :-
-    C @>= '1',
-    C @=< '8'.
-
 separateSelected([], [], []).
 separateSelected([[Card, true] | Tail], [Card | SelTail], Unselected) :- separateSelected(Tail, SelTail, Unselected).
 separateSelected([[Card, false] | Tail], Selected, [[Card, false] | UnsTail]) :- separateSelected(Tail, Selected, UnsTail).
@@ -78,3 +74,63 @@ compare_suit(Order, [[_, S1], _], [[_, S2], _]) :-
 sortBySuit(Hand, Sorted) :- predsort(compare_suit, Hand, Sorted).
 
 
+applyJokers([], ChipsMult, _, _, ChipsMult).
+applyJokers([Joker | Tail], CurrentCM, PokerHand, ScoredHand, FinalCM) :-
+  applyJoker(Joker, CurrentCM, PokerHand, ScoredHand, NextCM),
+  applyJokers(Tail, NextCM, PokerHand, ScoredHand, FinalCM).
+
+playedPokerHandAndChipsMult(State, PokerHand, ChipsMult) :-
+  State = [_, _, Hand, _, _, _, Jokers, PokerHandChipsMult],
+  separateSelected(Hand, SelectedHand, _),
+  ( SelectedHand == [] -> 
+    PokerHand = highCard, ChipsMult = [0, 0]
+  ;   
+    getPokerHandAndCards(SelectedHand, PokerHand, ScoredHand),
+    getChipsMultOfHand(PokerHandChipsMult, SelectedHand, BaseChipsMult),
+    apply_jokers(Jokers, BaseChipsMult, PokerHand, ScoredHand, ChipsMult)
+  ).
+
+isValidDigit(C,Int) :-
+  C @>= '1',
+  C @=< '8',
+  atom_number(C,Int).
+
+updateRoundGameState(Action, StateIn, StateOut) :-
+  StateIn = [Hands, Discards, Hand, Deck, Score, TargetScore, Jokers, PokerHandChipsMult], 
+  ( 
+    isValidDigit(Action, Index) ->  
+    toggleAtPos(Index, Hand, NewHand),
+    StateOut = [Hands, Discards, NewHand, Deck, Score, TargetScore, Jokers, PokerHandChipsMult]
+  ;
+    Action == q, Hands > 0,
+    separateSelected(Hand, SelectedHand, RemainingHand),
+    SelectedHand \= [] ->
+    
+    playedPokerHandAndChipsMult(StateIn, _, ChipsMult),
+    getScore(ChipsMult, EarnedScore),
+    NewScore is Score + EarnedScore,
+    NewHands is Hands - 1,
+    
+    length(SelectedHand, N),
+    drawNCards(N, RemainingHand, Deck, NextHand, NextDeck),
+    StateOut = [NewHands, Discards, NextHand, NextDeck, NewScore, TargetScore, Jokers, PokerHandChipsMult]
+  ;  
+    Action == w, Discards > 0,
+    separateSelected(Hand, SelectedHand, RemainingHand),
+    SelectedHand \= [] ->
+    
+    NewDiscards is Discards - 1,
+    length(SelectedHand, N),
+    drawNCards(N, RemainingHand, Deck, NextHand, NextDeck),
+    StateOut = [Hands, NewDiscards, NextHand, NextDeck, Score, TargetScore, Jokers, PokerHandChipsMult]
+  ; 
+    Action == e ->
+    sortBySuit(Hand, SortedHand),
+    StateOut = [Hands, Discards, SortedHand, Deck, Score, TargetScore, Jokers, PokerHandChipsMult]
+  ;  
+    Action == r ->
+    sortByRank(Hand, SortedHand),
+    StateOut = [Hands, Discards, SortedHand, Deck, Score, TargetScore, Jokers, PokerHandChipsMult]
+  ;
+    StateOut = StateIn
+  ).
