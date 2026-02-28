@@ -1,3 +1,9 @@
+:- module(random, [
+    getRandomItem/2,
+    getRandomItems/3,
+    shuffle/2,
+]).
+
 getRandomItem([], []).
 getRandomItem(Xs, R) :-
     length(Xs, Len),

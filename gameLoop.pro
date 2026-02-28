@@ -9,6 +9,8 @@
 :- use_module('cards.pro'). 
 :- use_module('hands.pro').
 :- use_module('jokers.pro').
+:- use_module('fullRoundLoop.pro').
+:- use_module('random.pro').
 
 roundGameState([Hands, Discards, Hand, Deck, Score, TargetScore, Jokers, PokerHandChipsMult]) :- 
   integer(Hands), Hands >= 0,
@@ -21,17 +23,17 @@ roundGameState([Hands, Discards, Hand, Deck, Score, TargetScore, Jokers, PokerHa
   %PokerHandChipsMult = PokerHand -> ChipsMult
   .
 
-initialRoundGameState(FullRoundState, [
-  4,
-  3,
-  Hand,
-  Deck,
-  0,
-  TargetScore,
-  Jokers,
-  PokerHandChipsMult
-]).
+initialRoundGameState(FullRoundState, [4, 3, Hand, RestDeck, 0, TargetScore, Jokers, PokerHandChipsMult]) :-
+  FullRoundState = [TargetScore, _, Jokers, PokerHandChipsMult].
+  fullDeck(Deck),
+  shuffle(Deck, ShuffledDeck),
 
+  length(InitialCards, 8),
+  append(InitialCards, RestDeck, ShuffledDeck),
+  
+  maplist(initUnselected, InitialCards, InitialHandUnsorted),
+  sortByRank(InitialHandUnsorted, Hand),
+  
 initUnselected(Card, [Card, false]).
 
 separateSelected([], [], []).
