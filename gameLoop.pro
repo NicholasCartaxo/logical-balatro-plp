@@ -16,9 +16,10 @@ roundGameState([Hands, Discards, Hand, Deck, Score, TargetScore, Jokers, PokerHa
   %Hand = [[Card, Boolean]]
   %Deck = [Card]
   integer(Score), Score >= 0,
-  integer(TargetScore), TargetScore >= 0,
+  integer(TargetScore), TargetScore >= 0
   %Jokers = [Joker]
-  chipsMult(PokerHandChipsMult).
+  %PokerHandChipsMult = PokerHand -> ChipsMult
+  .
 
 initialRoundGameState(FullRoundState, [
   4,
