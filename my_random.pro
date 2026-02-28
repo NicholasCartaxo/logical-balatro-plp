@@ -1,7 +1,7 @@
-:- module(random, [
+:- module(my_random, [
     getRandomItem/2,
     getRandomItems/3,
-    shuffle/2,
+    shuffle/2
 ]).
 
 getRandomItem([], []).

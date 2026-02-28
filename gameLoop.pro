@@ -7,10 +7,10 @@
 
 :- use_module(library(lists)).
 :- use_module('cards.pro'). 
-:- use_module('hands.pro').
+:- use_module('pokerHands.pro').
 :- use_module('jokers.pro').
 :- use_module('fullRoundLoop.pro').
-:- use_module('random.pro').
+:- use_module('my_random.pro').
 
 roundGameState([Hands, Discards, Hand, Deck, Score, TargetScore, Jokers, PokerHandChipsMult]) :- 
   integer(Hands), Hands >= 0,
@@ -18,21 +18,20 @@ roundGameState([Hands, Discards, Hand, Deck, Score, TargetScore, Jokers, PokerHa
   %Hand = [[Card, Boolean]]
   %Deck = [Card]
   integer(Score), Score >= 0,
-  integer(TargetScore), TargetScore >= 0
+  integer(TargetScore), TargetScore >= 0.
   %Jokers = [Joker]
   %PokerHandChipsMult = PokerHand -> ChipsMult
-  .
 
 initialRoundGameState(FullRoundState, [4, 3, Hand, RestDeck, 0, TargetScore, Jokers, PokerHandChipsMult]) :-
-  FullRoundState = [TargetScore, _, Jokers, PokerHandChipsMult].
+  FullRoundState = [TargetScore, _, Jokers, PokerHandChipsMult],
   fullDeck(Deck),
   shuffle(Deck, ShuffledDeck),
 
   length(InitialCards, 8),
-  append(InitialCards, RestDeck, ShuffledDeck),
+  append(InitialCards, RestDeck, ShuffledDeck), 
   
   maplist(initUnselected, InitialCards, InitialHandUnsorted),
-  sortByRank(InitialHandUnsorted, Hand),
+  sortByRank(InitialHandUnsorted, Hand).
   
 initUnselected(Card, [Card, false]).
 
@@ -46,10 +45,9 @@ toggleAtPos(Index, Hand, R) :-
   toggleNth(Index, Hand, NumSelected, R).
 
 toggleNth(1, [[Card, false] | Tail], NumSelected, R) :-
-  ((NumSelected > 5) -> R = [[Card,false] | Tail]); R = [[Card,true] | Tail], !.
+  ((NumSelected >= 5) -> R = [[Card,false] | Tail]); R = [[Card,true] | Tail], !.
 
 toggleNth(1, [[Card, true] | Tail], _, R) :- R = [[Card,false] | Tail], !.
-
 toggleNth(Index, [Head | Tail], NumSelected, [Head | RTail]) :-
   NextIndex is Index+1,
   toggleNth(NextIndex, Tail, NumSelected, RTail).
@@ -90,7 +88,7 @@ playedPokerHandAndChipsMult(State, PokerHand, ChipsMult) :-
   ;   
     getPokerHandAndCards(SelectedHand, PokerHand, ScoredHand),
     getChipsMultOfHand(PokerHandChipsMult, SelectedHand, BaseChipsMult),
-    apply_jokers(Jokers, BaseChipsMult, PokerHand, ScoredHand, ChipsMult)
+    applyJokers(Jokers, BaseChipsMult, PokerHand, ScoredHand, ChipsMult)
   ).
 
 isValidDigit(C,Int) :-

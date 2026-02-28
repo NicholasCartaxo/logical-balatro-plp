@@ -1,4 +1,4 @@
-:- module(hands, [
+:- module(pokerHands, [
     pokerHand/1,
     pokerHandStr/2,
     getPokerHandAndCards/3,
