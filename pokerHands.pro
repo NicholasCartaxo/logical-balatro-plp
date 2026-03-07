@@ -10,7 +10,7 @@
 ]).
 
 :- meta_predicate getChipsMultOfHand(2, ?, ?).
-:- use_module('cards.pro').
+:- use_module('Cards.pro').
 
 pokerHand(X) :-
   (X == straightFlush,!); (X == fourOfAKind,!); (X == fullHouse,!);

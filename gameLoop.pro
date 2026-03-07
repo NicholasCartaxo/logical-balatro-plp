@@ -6,7 +6,7 @@
 ]).
 
 :- use_module(library(lists)).
-:- use_module('cards.pro'). 
+:- use_module('Cards.pro'). 
 :- use_module('pokerHands.pro').
 :- use_module('jokers.pro').
 :- use_module('fullRoundLoop.pro').
