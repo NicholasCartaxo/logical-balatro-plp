@@ -29,7 +29,7 @@ initialRoundGameState(FullRoundState, [4, 3, Hand, RestDeck, 0, TargetScore, Jok
 
   length(InitialCards, 8),
   append(InitialCards, RestDeck, ShuffledDeck), 
-  
+
   maplist(initUnselected, InitialCards, InitialHandUnsorted),
   sortByRank(InitialHandUnsorted, Hand).
   
@@ -47,11 +47,18 @@ toggleAtPos(Index, Hand, R) :-
 toggleNth(1, [[Card, false] | Tail], NumSelected, R) :-
   ((NumSelected >= 5) -> R = [[Card,false] | Tail]); R = [[Card,true] | Tail], !.
 
-toggleNth(1, [[Card, true] | Tail], _, R) :- R = [[Card,false] | Tail], !.
-toggleNth(Index, [Head | Tail], NumSelected, [Head | RTail]) :-
-  NextIndex is Index+1,
-  toggleNth(NextIndex, Tail, NumSelected, RTail).
+toggleNth(1, [[Card, false] | Tail], NumSelected, [[Card,true] | Tail]) :-
+    NumSelected < 5, !.
 
+toggleNth(1, [[Card, false] | Tail], NumSelected, [[Card,false] | Tail]) :-
+    NumSelected >= 5, !.
+
+toggleNth(1, [[Card, true] | Tail], _, [[Card,false] | Tail]) :- !.
+
+toggleNth(Index, [Head | Tail], NumSelected, [Head | RTail]) :-
+    Index > 1,
+    I1 is Index - 1,
+    toggleNth(I1, Tail, NumSelected, RTail).
 
 drawNCards(N, HandIn, DeckIn, HandOut, DeckOut) :-
   length(DrawnCards, N),
@@ -62,15 +69,29 @@ drawNCards(N, HandIn, DeckIn, HandOut, DeckOut) :-
   sortByRank(NewHandUnsorted, HandOut).
 
 
-compare_rank(Order, [[R1, _], _], [[R2, _], _]) :-
-    rankOrd(R1, O1), rankOrd(R2, O2),
-    compare(Order, O1, O2).
+compare_rank(Order, [[R1,S1],_], [[R2,S2],_]) :-
+    rankOrd(R1,O1),
+    rankOrd(R2,O2),
+    ( O1 =:= O2 ->
+        suitOrd(S1,SO1),
+        suitOrd(S2,SO2),
+        compare(Order,SO1,SO2)
+    ;
+        compare(Order,O1,O2)
+    ).
 
 sortByRank(Hand, Sorted) :- predsort(compare_rank, Hand, Sorted).
 
-compare_suit(Order, [[_, S1], _], [[_, S2], _]) :-
-    suitOrd(S1, O1), suitOrd(S2, O2),
-    compare(Order, O1, O2).
+compare_suit(Order, [[R1,S1],_], [[R2,S2],_]) :-
+    suitOrd(S1,O1),
+    suitOrd(S2,O2),
+    ( O1 =:= O2 ->
+        rankOrd(R1,RO1),
+        rankOrd(R2,RO2),
+        compare(Order,RO1,RO2)
+    ;
+        compare(Order,O1,O2)
+    ).
 
 sortBySuit(Hand, Sorted) :- predsort(compare_suit, Hand, Sorted).
 

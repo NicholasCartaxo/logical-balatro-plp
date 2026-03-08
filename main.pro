@@ -1,9 +1,12 @@
+:- encoding(utf8).
+
 :- use_module('./fullRoundLoop.pro').
 :- use_module('./gameLoop.pro').
 :- use_module('./jokers.pro').
 :- use_module('./my_random.pro').
 :- use_module('./Cards.pro').
 :- use_module(library(readutil)).
+:- ['pokerHands.pro'].
 
 clear_terminal :- write('\n\033[2J\033[H').
 
@@ -38,8 +41,7 @@ gs_get([_,_,_,_,Score,_,_,_], score, Score).
 gs_get([_,_,_,_,_,Target,_,_], target, Target).
 gs_get([_,_,_,_,_,_,Jokers,_], jokers, Jokers).
 gs_get([_,_,_,_,_,_,_,PHCM], phcm, PHCM).
-
-
+gs_get(State, full, State).
 
 color_code(heart, "\e[31m").
 color_code(spade, "\e[34m").
@@ -84,6 +86,16 @@ render_jokers(Jokers) :-
     render_joker_slot(4, Jokers),
     render_joker_slot(5, Jokers).
 
+render_current_hand(State) :-
+    playedPokerHandAndChipsMult(State, PokerHand, [Chips, Mult]),
+    pokerHandStr(PokerHand, Name),
+    to_s(Chips, ChipsS),
+    to_s(Mult, MultS),
+
+    write("Mão atual: "),
+    writeln(Name),
+    line(["FICHAS x MULTI: ", ChipsS, " x ", MultS]).
+
 % =========================================================
 % UI /- PrintGameState
 % =========================================================
@@ -108,6 +120,7 @@ print_game_state(State) :-
     to_s(Score, ScoreS),
     to_s(Target, TargetS),
     line(["Fichas: ", ScoreS, " / ", TargetS]),
+    render_current_hand(State),
     writeln(" "),
     gs_get(State, hands, Hands),
     gs_get(State, discards, Discards),
