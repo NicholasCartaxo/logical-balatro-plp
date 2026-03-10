@@ -5,7 +5,8 @@
   upgradedPokerHandFullRoundState/3,
   notFullJokerFullRoundState/4,
   fullJokerFullRoundState/5,
-  changeJokerOrderFullRoundState/4
+  changeJokerOrderFullRoundState/4,
+  upgradedChipsMult/4
 ]).
 
 :- use_module(library(lists)).

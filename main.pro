@@ -76,7 +76,7 @@ render_joker_slot(I, Jokers) :-
         line(["[", IS, "] ", Name, " — ", Desc])
     ;
         to_s(I, IS),
-        line(["[", IS, "] [ ]"])
+        line(["[", IS, "]"])
     ).
 
 render_jokers(Jokers) :-
@@ -85,6 +85,42 @@ render_jokers(Jokers) :-
     render_joker_slot(3, Jokers),
     render_joker_slot(4, Jokers),
     render_joker_slot(5, Jokers).
+
+switch_jokers_position(State, NewState) :-
+    State = [_, _, Jokers, _],
+    length(Jokers, N),
+
+    ( N < 2 ->
+        NewState = State
+    ;
+        writeln(""),
+        writeln("Deseja trocar a ordem dos coringas?"),
+        writeln("Pressione qualquer letra para continuar sem trocar."),
+        render_jokers(Jokers),
+
+        write("Joker 1: "),
+        get_char_and_clean(C1),
+        
+        ( charToInt(C1, I1),I1 >= 1, I1 =< N ->
+            write("Joker 2: "),
+            get_char_and_clean(C2),
+             ( charToInt(C2, I2), I2 >= 1, I2 =< N ->
+
+            changeJokerOrderFullRoundState(I1, I2, State, TempState),
+            switch_jokers_position(TempState, NewState)
+        ;
+            writeln("Slot inválido! Tente novamente."),
+            switch_jokers_position(State, NewState)
+        )
+    ;
+        ( charToInt(C1, _) ->
+            writeln("Slot inválido! Tente novamente."),
+            switch_jokers_position(State, NewState)
+        ;
+            NewState = State
+        )
+    )
+    ).
 
 render_current_hand(State) :-
     playedPokerHandAndChipsMult(State, PokerHand, [Chips, Mult]),
@@ -96,6 +132,24 @@ render_current_hand(State) :-
     writeln(Name),
     line(["FICHAS x MULTI: ", ChipsS, " x ", MultS]).
 
+all_poker_hands([
+    straightFlush,
+    fourOfAKind,
+    fullHouse,
+    flush,
+    straight,
+    threeOfAKind,
+    twoPair,
+    pair,
+    highCard
+]).
+
+print_poker_hands_table(State) :-
+    gs_get(State, phcm, PHCM),
+    all_poker_hands(Hands),
+
+    print_poker_hand_options(1, Hands, PHCM).
+
 % =========================================================
 % UI /- PrintGameState
 % =========================================================
@@ -104,6 +158,19 @@ print_game_state(State) :-
     clear_terminal,
     writeln("===================================="),
     writeln("              BALATRO               "),
+    writeln("===================================="),
+    writeln("OBJETIVO"),
+    writeln("===================================="),
+    writeln("Jogue mãos de poker para pontuar fichas"),
+    writeln("Descarte cartas para tentar formar mãos melhores"),
+    writeln("Cada mão possui uma pontuação base"),
+    writeln("Cada carta pontua fichas com base em seu valor"),
+    writeln("Melhore suas mãos poker e ganhe coringas"),
+    writeln("Para pontuar mais fichas"),
+    writeln("===================================="),
+    writeln(" MÃOS DE PÔQUER"),
+    writeln("===================================="),
+    print_poker_hands_table(State),
     writeln("===================================="),
     writeln(" CORINGAS"),
     writeln("===================================="),
@@ -150,11 +217,11 @@ game_loop(State, Result) :-
     print_game_state(State),
     ( is_win(State) ->
         writeln(""),
-        writeln("🎉 Você atingiu a pontuação alvo!"),
+        writeln("Você atingiu a pontuação alvo!"),
         Result = true
     ; is_out_of_moves(State) ->
         writeln(""),
-        writeln("❌ Acabaram as jogadas!"),
+        writeln("Acabaram as jogadas!"),
         writeln("Fim de jogo!"),
         Result = false
     ;
@@ -194,7 +261,7 @@ print_poker_hand_options(I, [H|Rest], PHCM) :-
     to_s(I, IS),
     to_s(Chips, ChipsS),
     to_s(Mult, MultS),
-    line(["  ", IS, " - ", Name, "  (", ChipsS, " fichas x ", MultS, " mult)"]),
+    line([Name, " - ", ChipsS, " x ", MultS]),
     I2 is I + 1,
     print_poker_hand_options(I2, Rest, PHCM).
 
@@ -228,6 +295,9 @@ joker_shop(FullState, NewFullState) :-
         fullJokerFullRoundState(IdxNewChar, IdxOldChar, OfferedJokers, FullState, NewFullState)
     ).
 
+charToInt(Char, Int) :-
+    atom_number(Char, Int).
+
 % upgrade de mao
 hand_upgrade_shop(FullState, NewFullState) :-
     FullState = [_, _, _, PHCM],
@@ -247,21 +317,46 @@ hand_upgrade_shop(FullState, NewFullState) :-
 
 % Menu da "loja"
 pick_joker_or_increase_poker_hand(FullState, NewFullState) :-
+    FullState = [_, _, CurrentJokers, PHCM],
+
+    allJokers(AllJokers),
+    getRandomItems(2, AllJokers, OfferedJokers),
+
+    AllHands = [straightFlush, fourOfAKind, fullHouse, flush,
+                straight, threeOfAKind, twoPair, pair, highCard],
+    getRandomItem(AllHands, OfferedHand),
+
+    call(PHCM, OfferedHand, CurrentCM),
+    getUpgradedPokerHandChipsMult(OfferedHand, CurrentCM, [NewChips, NewMult]),
+
+    pokerHandStr(OfferedHand, HandName),
+
+    to_s(NewChips, ChipsS),
+    to_s(NewMult, MultS),
+
     writeln(""),
     writeln("=== Bônus da rodada ==="),
     writeln(""),
     writeln("Para a próxima fase você pode escolher um dos bônus:"),
-    writeln("  1 - Receber um Coringa aleatório"),
-    writeln("  2 - Melhorar uma mão de poker"),
+    OfferedJokers = [J1,J2],
+    jokerStr(J1, J1Name),
+    jokerStr(J2, J2Name),
+    to_s(Chips, ChipsS),
+    to_s(Mult, MultS),
+    line(["1: Joker ", J1Name]),
+    line(["2: Joker ", J2Name]),
+    line(["3: Melhoria de mão ", HandName, " - ", ChipsS, " x ", MultS]),
     writeln(""),
-    write("Escolha (1-2): "),
+    write("Escolha (1-3): "),
     get_char_and_clean(Choice),
     ( Choice == '1' ->
-        joker_shop(FullState, NewFullState)
+        apply_joker_choice(1, OfferedJokers, FullState, NewFullState)
     ; Choice == '2' ->
-        hand_upgrade_shop(FullState, NewFullState)
+        apply_joker_choice(2, OfferedJokers, FullState, NewFullState)
+    ; Choice == '3' ->
+        upgradedPokerHandFullRoundState(OfferedHand, FullState, NewFullState)
     ;
-        writeln("Opção inválida, tente novamente."),
+        writeln("Opção inválida."),
         pick_joker_or_increase_poker_hand(FullState, NewFullState)
     ).
 
@@ -269,7 +364,10 @@ full_round_loop(FullState) :-
     initialRoundGameState(FullState, RoundState),
     game_loop(RoundState, Result),
     ( Result = true ->
-        nextFullRoundState(FullState, NextState),
+        writeln(""),
+        pick_joker_or_increase_poker_hand(FullState, RewardState),
+        switch_jokers_position(RewardState, ReorderedState),
+        nextFullRoundState(ReorderedState, NextState),
         full_round_loop(NextState)
     ;
         
@@ -278,6 +376,26 @@ full_round_loop(FullState) :-
         line(["Fim de jogo! Você perdeu. Target era ", TargetS]),
         true
     ).
+
+apply_joker_choice(Idx, OfferedJokers, FullState, NewFullState) :-
+    FullState = [_, _, CurrentJokers, _],
+    length(CurrentJokers, NumJokers),
+
+    number_string(Idx, IdxStr),
+
+    ( NumJokers < 5 ->
+        notFullJokerFullRoundState(IdxStr, OfferedJokers, FullState, NewFullState)
+    ;
+        writeln("Seus slots de coringas estão cheios."),
+        writeln("Escolha qual coringa substituir:"),
+
+        print_current_jokers(1, CurrentJokers),
+        write("Índice do coringa a substituir (1-5): "),
+        get_char_and_clean(IdxOldChar),
+
+        fullJokerFullRoundState(IdxStr, IdxOldChar, OfferedJokers, FullState, NewFullState)
+    ).
+
 
 main_screen :-
     clear_terminal,
