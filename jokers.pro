@@ -1,3 +1,5 @@
+:- encoding(utf8).
+
 :- module(jokers, [
   joker/1,
   allJokers/1,

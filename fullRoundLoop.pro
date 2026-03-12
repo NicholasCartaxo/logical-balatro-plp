@@ -1,3 +1,5 @@
+:- encoding(utf8).
+
 :- module(fullRoundLoop, [
   fullRoundState/1,
   initialFullRoundState/1,

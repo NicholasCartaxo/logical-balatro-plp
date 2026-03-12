@@ -1,3 +1,4 @@
+:- encoding(utf8).
 :- module(pokerHands, [
     pokerHand/1,
     allHands/1,

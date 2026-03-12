@@ -1,3 +1,5 @@
+:- encoding(utf8).
+
 :- module(gameLoop, [
     roundGameState/1,
     initialRoundGameState/2,
@@ -6,11 +8,11 @@
 ]).
 
 :- use_module(library(lists)).
+:- use_module(library(random)).
 :- use_module('Cards.pro'). 
 :- use_module('pokerHands.pro').
 :- use_module('jokers.pro').
 :- use_module('fullRoundLoop.pro').
-:- use_module('my_random.pro').
 
 roundGameState([Hands, Discards, Hand, Deck, Score, TargetScore, Jokers, PokerHandChipsMult]) :- 
   integer(Hands), Hands >= 0,
@@ -25,7 +27,7 @@ roundGameState([Hands, Discards, Hand, Deck, Score, TargetScore, Jokers, PokerHa
 initialRoundGameState(FullRoundState, [4, 3, Hand, RestDeck, 0, TargetScore, Jokers, PokerHandChipsMult]) :-
   FullRoundState = [TargetScore, _, Jokers, PokerHandChipsMult],
   fullDeck(Deck),
-  shuffle(Deck, ShuffledDeck),
+  random_permutation(Deck, ShuffledDeck),
 
   length(InitialCards, 8),
   append(InitialCards, RestDeck, ShuffledDeck), 
