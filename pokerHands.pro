@@ -1,5 +1,6 @@
 :- module(pokerHands, [
     pokerHand/1,
+    allHands/1,
     pokerHandStr/2,
     getPokerHandAndCards/3,
     chipsMult/1,
@@ -16,6 +17,8 @@ pokerHand(X) :-
   (X == straightFlush,!); (X == fourOfAKind,!); (X == fullHouse,!);
   (X == flush,!); (X == straight,!); (X == threeOfAKind,!);
   (X == twoPair,!); (X == pair,!); (X == highCard,!).
+
+allHands([straightFlush, fourOfAKind, fullHouse, flush, straight, threeOfAKind, twoPair, pair, highCard]).
 
 pokerHandStr(straightFlush,"Straight Flush").
 pokerHandStr(fourOfAKind,"Quadra").

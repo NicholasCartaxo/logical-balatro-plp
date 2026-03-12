@@ -4,9 +4,9 @@
 :- use_module('./gameLoop.pro').
 :- use_module('./jokers.pro').
 :- use_module('./my_random.pro').
-:- use_module('./Cards.pro').
+:- use_module('./cards.pro').
+:- use_module('./pokerHands.pro').
 :- use_module(library(readutil)).
-:- ['pokerHands.pro'].
 
 clear_terminal :- write('\n\033[2J\033[H').
 
@@ -29,27 +29,12 @@ line(Parts) :-
     atomic_list_concat(Parts, "", A),
     writeln(A).
 
-% =========================================================
-% Gets para facilitar o acesso as variaveis do estadoo
-% =========================================================
-
-gs_get([H,_,_,_,_,_,_,_], hands, H).
-gs_get([_,D,_,_,_,_,_,_], discards, D).
-gs_get([_,_,Hand,_,_,_,_,_], hand, Hand).
-gs_get([_,_,_,Deck,_,_,_,_], deck, Deck).
-gs_get([_,_,_,_,Score,_,_,_], score, Score).
-gs_get([_,_,_,_,_,Target,_,_], target, Target).
-gs_get([_,_,_,_,_,_,Jokers,_], jokers, Jokers).
-gs_get([_,_,_,_,_,_,_,PHCM], phcm, PHCM).
-gs_get(State, full, State).
-
 color_code(heart, "\e[31m").
 color_code(spade, "\e[34m").
 color_code(club, "\e[32m").
 color_code(diamond, "\e[33m").
 
 reset_code("\e[0m").
-
 
 render_card(Index, [Rank, Suit], Selected) :-
     color_code(Suit, Color),
@@ -132,22 +117,10 @@ render_current_hand(State) :-
     writeln(Name),
     line(["FICHAS x MULTI: ", ChipsS, " x ", MultS]).
 
-all_poker_hands([
-    straightFlush,
-    fourOfAKind,
-    fullHouse,
-    flush,
-    straight,
-    threeOfAKind,
-    twoPair,
-    pair,
-    highCard
-]).
 
 print_poker_hands_table(State) :-
-    gs_get(State, phcm, PHCM),
-    all_poker_hands(Hands),
-
+    State = [_,_,_,_,_,_,_,PHCM],
+    allHands(Hands),
     print_poker_hand_options(1, Hands, PHCM).
 
 % =========================================================
@@ -156,6 +129,7 @@ print_poker_hands_table(State) :-
 
 print_game_state(State) :-
     clear_terminal,
+    State = [Hands, Discards, Hand, _, Score, Target, Jokers, _],
     writeln("===================================="),
     writeln("              BALATRO               "),
     writeln("===================================="),
@@ -174,23 +148,17 @@ print_game_state(State) :-
     writeln("===================================="),
     writeln(" CORINGAS"),
     writeln("===================================="),
-    gs_get(State, jokers, Jokers),
     render_jokers(Jokers),
     writeln("===================================="),
     writeln(" MÃO ATUAL"),
     writeln("===================================="),
-    gs_get(State, hand, Hand),
     render_hand(Hand),
     writeln("------------------------------------"),
-    gs_get(State, score, Score),
-    gs_get(State, target, Target),
     to_s(Score, ScoreS),
     to_s(Target, TargetS),
     line(["Fichas: ", ScoreS, " / ", TargetS]),
     render_current_hand(State),
     writeln(" "),
-    gs_get(State, hands, Hands),
-    gs_get(State, discards, Discards),
     to_s(Hands, HandsS),
     to_s(Discards, DiscardsS),
     line(["Jogadas: ", HandsS, "    Descartes: ", DiscardsS]),
@@ -205,12 +173,11 @@ print_game_state(State) :-
     writeln("------------------------------------").
 
 is_win(State) :-
-    gs_get(State, score, Score),
-    gs_get(State, target, Target),
+    State = [_,_,_,_,Score,Target,_,_],
     Score >= Target.
 
 is_out_of_moves(State) :-
-    gs_get(State, hands, Hands),
+    State = [Hands,_,_,_,_,_,_,_],
     Hands =< 0.
 
 game_loop(State, Result) :-
@@ -235,15 +202,6 @@ game_loop(State, Result) :-
         )
     ).
 
-print_available_jokers(_, []).
-print_available_jokers(I, [J|Rest]) :-
-jokerStr(J, Name),
-jokerDescription(J, Desc),
-to_s(I, IS),
-line(["  ", IS, " - ", Name, " — ", Desc]),
-I2 is I + 1,
-print_available_jokers(I2, Rest).
-
 % Exibe os jokers atualmente 
 print_current_jokers(_, []).
 print_current_jokers(I, [J|Rest]) :-
@@ -265,66 +223,22 @@ print_poker_hand_options(I, [H|Rest], PHCM) :-
     I2 is I + 1,
     print_poker_hand_options(I2, Rest, PHCM).
 
-
-joker_shop(FullState, NewFullState) :-
-    FullState = [_, _, CurrentJokers, _],
-    allJokers(AllJokers),
-    getRandomItems(3, AllJokers, OfferedJokers),
-
-    writeln(""),
-    writeln("--- Coringas disponíveis ---"),
-    print_available_jokers(1, OfferedJokers),
-    writeln(""),
-
-    length(CurrentJokers, NumJokers),
-    ( NumJokers < 5 ->
-        write("Escolha um coringa (1-3): "),
-        get_char_and_clean(IdxChar),
-        notFullJokerFullRoundState(IdxChar, OfferedJokers, FullState, NewFullState)
-    ;
-        writeln("Seus slots de coringas estão cheios!"),
-        writeln(""),
-        writeln("Escolha qual coringa NOVO você quer:"),
-        write("Índice do novo coringa (1-3): "),
-        get_char_and_clean(IdxNewChar),
-        writeln(""),
-        writeln("Escolha qual coringa ATUAL substituir:"),
-        print_current_jokers(1, CurrentJokers),
-        write("Índice do coringa a substituir (1-5): "),
-        get_char_and_clean(IdxOldChar),
-        fullJokerFullRoundState(IdxNewChar, IdxOldChar, OfferedJokers, FullState, NewFullState)
-    ).
-
 charToInt(Char, Int) :-
     atom_number(Char, Int).
 
-% upgrade de mao
-hand_upgrade_shop(FullState, NewFullState) :-
-    FullState = [_, _, _, PHCM],
-    AllHands = [straightFlush, fourOfAKind, fullHouse, flush,
-                straight, threeOfAKind, twoPair, pair, highCard],
-
-    writeln(""),
-    writeln("--- Mãos de poker disponíveis ---"),
-    print_poker_hand_options(1, AllHands, PHCM),
-    writeln(""),
-
-    write("Escolha uma mão para melhorar (1-9): "),
-    get_char_and_clean(IdxChar),
-    charToInt(IdxChar, Idx),
-    nth1(Idx, AllHands, ChosenHand),
-    upgradedPokerHandFullRoundState(ChosenHand, FullState, NewFullState).
-
 % Menu da "loja"
 pick_joker_or_increase_poker_hand(FullState, NewFullState) :-
-    FullState = [_, _, CurrentJokers, PHCM],
-
     allJokers(AllJokers),
     getRandomItems(2, AllJokers, OfferedJokers),
 
-    AllHands = [straightFlush, fourOfAKind, fullHouse, flush,
-                straight, threeOfAKind, twoPair, pair, highCard],
+    allHands(AllHands),
     getRandomItem(AllHands, OfferedHand),
+
+    get_joker_or_poker_hand(FullState, NewFullState, OfferedHand, OfferedJokers).
+
+
+get_joker_or_poker_hand(FullState, NewFullState, OfferedHand, OfferedJokers) :-
+    FullState = [_, _, CurrentJokers, PHCM],
 
     call(PHCM, OfferedHand, CurrentCM),
     getUpgradedPokerHandChipsMult(OfferedHand, CurrentCM, [NewChips, NewMult]),
@@ -341,8 +255,6 @@ pick_joker_or_increase_poker_hand(FullState, NewFullState) :-
     OfferedJokers = [J1,J2],
     jokerStr(J1, J1Name),
     jokerStr(J2, J2Name),
-    to_s(Chips, ChipsS),
-    to_s(Mult, MultS),
     line(["1: Joker ", J1Name]),
     line(["2: Joker ", J2Name]),
     line(["3: Melhoria de mão ", HandName, " - ", ChipsS, " x ", MultS]),
@@ -357,7 +269,7 @@ pick_joker_or_increase_poker_hand(FullState, NewFullState) :-
         upgradedPokerHandFullRoundState(OfferedHand, FullState, NewFullState)
     ;
         writeln("Opção inválida."),
-        pick_joker_or_increase_poker_hand(FullState, NewFullState)
+        get_joker_or_poker_hand(FullState, NewFullState, OfferedHand, OfferedJokers)
     ).
 
 full_round_loop(FullState) :-
@@ -403,6 +315,6 @@ main_screen :-
     initialFullRoundState(State),
     full_round_loop(State).
 
-main :- main_screen, !.
+:- main_screen, !.
 
 %Tem que colcoar o UTF-8 pro windows rodar sem corrupção de caracteres também.
