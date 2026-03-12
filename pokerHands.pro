@@ -1,5 +1,6 @@
-:- module(hands, [
+:- module(pokerHands, [
     pokerHand/1,
+    allHands/1,
     pokerHandStr/2,
     getPokerHandAndCards/3,
     chipsMult/1,
@@ -10,12 +11,14 @@
 ]).
 
 :- meta_predicate getChipsMultOfHand(2, ?, ?).
-:- use_module('cards.pro').
+:- use_module('Cards.pro').
 
 pokerHand(X) :-
   (X == straightFlush,!); (X == fourOfAKind,!); (X == fullHouse,!);
   (X == flush,!); (X == straight,!); (X == threeOfAKind,!);
   (X == twoPair,!); (X == pair,!); (X == highCard,!).
+
+allHands([straightFlush, fourOfAKind, fullHouse, flush, straight, threeOfAKind, twoPair, pair, highCard]).
 
 pokerHandStr(straightFlush,"Straight Flush").
 pokerHandStr(fourOfAKind,"Quadra").
