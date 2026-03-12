@@ -1,3 +1,5 @@
+:- encoding(utf8).
+
 :- module(cards, [
     suit/1,
     suitStr/2,

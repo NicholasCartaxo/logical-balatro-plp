@@ -3,10 +3,10 @@
 :- use_module('./fullRoundLoop.pro').
 :- use_module('./gameLoop.pro').
 :- use_module('./jokers.pro').
-:- use_module('./my_random.pro').
 :- use_module('./cards.pro').
 :- use_module('./pokerHands.pro').
 :- use_module(library(readutil)).
+:- use_module(library(random)).
 
 clear_terminal :- write('\n\033[2J\033[H').
 
@@ -229,10 +229,12 @@ charToInt(Char, Int) :-
 % Menu da "loja"
 pick_joker_or_increase_poker_hand(FullState, NewFullState) :-
     allJokers(AllJokers),
-    getRandomItems(2, AllJokers, OfferedJokers),
+    random_permutation(AllJokers, ShuffledJokers),
+    length(OfferedJokers, 2),
+    append(OfferedJokers, _, ShuffledJokers),
 
     allHands(AllHands),
-    getRandomItem(AllHands, OfferedHand),
+    random_member(OfferedHand, AllHands),
 
     get_joker_or_poker_hand(FullState, NewFullState, OfferedHand, OfferedJokers).
 
